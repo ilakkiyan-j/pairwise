@@ -1,0 +1,170 @@
+[2026-10-17 19:35:00] PHASE 0 — REPOSITORY AUDIT & BASELINE SETUP
+Milestone: Phase 0 Completed
+Files Created/Changed:
+  - .gitignore (updated with Node, Next.js, and secrets ignore rules)
+  - .env.example (created with safe placeholder keys)
+  - .ai/log.txt (initialized with chronological audit log)
+  - .ai/implementation.md (updated with starting status and verified Phase 0)
+Architectural Decisions:
+  - Architecture: Next.js App Router + TypeScript + Tailwind CSS with modular services in lib/ (source-ingestion, profile-analysis, agent-runtime, compatibility, db, schemas).
+  - Persistence: Dual-mode repository pattern in lib/db.ts: local file-based persistent store (survives refreshes, zero external friction) + Supabase/PostgreSQL adapter when environment variables are configured.
+  - LLM Integration: OpenAI-compatible provider client in lib/llm.ts configurable with OPENAI_API_KEY, OPENAI_MODEL, and OPENAI_BASE_URL.
+  - Data privacy & consent: Strict gate requiring participant opt-in before analysis or inclusion in dating/rankings; exactly 2 source URLs (LinkedIn & Instagram); provenance recorded for all extracted signals.
+Commands Executed:
+  - git init (Pass)
+  - node -v -> v26.7.0 (Pass)
+  - npm -v -> 11.6.0 (Pass)
+Pass/Fail:
+  - Phase 0 acceptance criteria: PASS.
+Errors & Blockers:
+  - None.
+Next Phase Required Environment Variable Names:
+  - Phase 1 (Application Foundation & Design System): None required for local foundation; OPENAI_API_KEY will be needed for Phase 2/3.
+
+[2026-10-17 19:42:00] PHASE 1 — APPLICATION FOUNDATION & DESIGN SYSTEM
+Milestone: Phase 1 Completed
+Files Created/Changed:
+  - package.json (Next.js 14.2.24, React 18, Tailwind, Zod, Lucide-react)
+  - tsconfig.json (TypeScript path mapping @/*)
+  - tailwind.config.ts (design tokens from .ai/design.md: warm editorial palette, borders, shadows)
+  - postcss.config.js (Tailwind + Autoprefixer)
+  - next.config.js (Next.js standard config)
+  - app/globals.css (CSS variables for brand colors: #FAF8F5, #B83267, #293C35, etc.)
+  - lib/utils.ts (cn classnames helper and date formatters)
+  - lib/schemas.ts (typed Zod schemas for Participants, Sources, Profile Analysis, Dating Turns, Evaluations, Rankings)
+  - components/app-header.tsx (PairWise brand, desktop & mobile navigation, DEMO badge, Add Person CTA)
+  - components/page-header.tsx (consistent responsive page titles with badge & action slots)
+  - components/status-badge.tsx (accessible multi-state indicators for analysis, consent, and demo records)
+  - components/source-links.tsx (secure external LinkedIn and Instagram official links)
+  - components/empty-state.tsx (reusable empty state cards)
+  - components/error-message.tsx (actionable error banners with retry action)
+  - app/layout.tsx (app shell, metadata, responsive container, ethical footer)
+  - app/page.tsx (landing dashboard with stats panel and 3-step workflow)
+  - app/people/page.tsx, app/people/new/page.tsx, app/people/[id]/page.tsx (directory and profile shells)
+  - app/dates/page.tsx, app/dates/[id]/page.tsx, app/rankings/[personId]/page.tsx (dates and rankings shells)
+Architectural Decisions:
+  - Established shared Zod domain schemas in lib/schemas.ts as single source of truth for both runtime validation and TypeScript types.
+  - Used Tailwind theme tokens for warm editorial aesthetic (#FAF8F5 base, #B83267 primary rose, #293C35 evergreen) matching .ai/design.md.
+Commands Executed:
+  - npm install (Pass, 118 packages added)
+  - npm run build (Pass, 7/7 static/dynamic routes compiled successfully)
+  - npm run dev (Pass, dev server active on port 3000)
+  - Invoke-RestMethod against /, /people, /people/new, /dates (Pass, HTTP 200 OK)
+Pass/Fail:
+  - Phase 1 acceptance criteria: PASS.
+Errors & Blockers:
+  - None.
+Next Phase Required Environment Variable Names:
+  - Phase 2 (Persistence & Participant Onboarding): Local filesystem storage operates without external variables; DATABASE_URL or SUPABASE_* optional for external DB.
+
+[2026-10-17 20:05:00] PHASE 2 — PERSISTENCE & PARTICIPANT ONBOARDING
+Milestone: Phase 2 Completed
+Files Created/Changed:
+  - lib/db.ts (atomic file-based persistence for participants, date sessions, and rankings in data/pairwise-store.json)
+  - lib/source-ingestion.ts (source URL validator, consent verification, and provenance metadata builder)
+  - app/api/people/route.ts (GET active participants, POST participant with URL validation, consent gate, and duplicate prevention)
+  - app/api/people/[id]/route.ts (GET participant by ID, DELETE participant with cascade invalidation of rankings)
+  - components/participant-card.tsx (participant card displaying status badge, source links, and interests preview)
+  - app/people/new/page.tsx (interactive onboarding form with inline validation, source content input, and mandatory consent)
+  - app/people/page.tsx (searchable, filterable participant directory)
+  - app/people/[id]/page.tsx (participant detail page with verified source provenance and action triggers)
+Architectural Decisions:
+  - Atomic write queue implemented in lib/db.ts to guarantee thread-safe file persistence on disk (data/pairwise-store.json).
+  - Enforced strict duplicate checking via normalized LinkedIn/Instagram profile URLs.
+  - Enforced mandatory explicit consent checkbox before permitting participant registration.
+Commands Executed:
+  - Invoke-RestMethod GET http://localhost:3000/api/people -> 200 OK (count: 0) (Pass)
+  - Invoke-RestMethod POST http://localhost:3000/api/people (valid participant) -> 201 Created (Pass)
+  - Invoke-RestMethod POST http://localhost:3000/api/people (duplicate URLs) -> 409 Conflict with clear message (Pass)
+  - Invoke-RestMethod POST http://localhost:3000/api/people (missing consent) -> 400 Bad Request with consent validation error (Pass)
+  - Invoke-RestMethod POST http://localhost:3000/api/people (invalid non-HTTPS URL) -> 400 Bad Request (Pass)
+  - Invoke-RestMethod GET http://localhost:3000/api/people/:id -> 200 OK with full participant data (Pass)
+  - Verified data/pairwise-store.json on disk (Pass)
+  - npm run build (Pass, 8/8 static/dynamic routes compiled cleanly)
+Pass/Fail:
+  - Phase 2 acceptance criteria: PASS.
+Errors & Blockers:
+  - None.
+Next Phase Required Environment Variable Names:
+  - Phase 3 (Profile Analysis): OPENAI_API_KEY (or compatible API key), OPENAI_MODEL (e.g. gpt-4o-mini).
+
+[2026-10-17 20:28:00] PHASE 3 — PROFILE ANALYSIS
+Milestone: Phase 3 Completed
+Files Created/Changed:
+  - lib/llm.ts (universal LLM client supporting OpenAI and Google Gemini OpenAI compatibility endpoint, structured JSON, 1-retry repair, and safe fallback)
+  - lib/profile-analysis.ts (Profile Analyst prompt with safety constraints, evidence citations, and Zod ProfileAnalysisSchema validation)
+  - app/api/analyze/route.ts (POST route handler executing analysis, updating participant status, and persisting results)
+  - app/people/[id]/page.tsx (rich profile intelligence page displaying summary, interests chips, goals, evidence cards with provenance & confidence, and unknowns panel)
+Architectural Decisions:
+  - Implemented automatic detection and routing for Google Gemini keys to https://generativelanguage.googleapis.com/v1beta/openai.
+  - Required evidence attribution: each claim classified as direct statement vs supported interpretation with confidence rating.
+  - Separated unknowns and exploratory questions to avoid treating missing data as incompatibility.
+Commands Executed:
+  - Invoke-RestMethod POST http://localhost:3000/api/analyze for Maya Lin -> 200 OK (Pass)
+  - Verified structured JSON output matching Zod ProfileAnalysisSchema (Pass)
+  - Verified persisted analysis in data/pairwise-store.json (Pass)
+  - Invoke-RestMethod GET http://localhost:3000/api/people/:id -> 200 OK with completed analysis (Pass)
+  - npm run build -> 9/9 routes compiled with zero errors (Pass)
+Pass/Fail:
+  - Phase 3 acceptance criteria: PASS.
+Errors & Blockers:
+  - None.
+Next Phase Required Environment Variable Names:
+  - Phase 4 (Agent Dating Runtime): Uses same OPENAI_API_KEY / GEMINI_API_KEY as Phase 3.
+
+[2026-10-17 20:35:00] PHASE 4 — AGENT DATING RUNTIME & DATING ARENA
+Milestone: Phase 4 Completed
+Files Created/Changed:
+  - lib/agent-runtime.ts (independent Participant Advocate prompts for Agent A & Agent B, 6-turn alternating conversation loop, per-turn atomic persistence, Date Evaluator directional evaluations and mutual summary)
+  - app/api/dates/route.ts (GET date sessions, POST launch date with eligibility check, different person check, consent validation)
+  - app/api/dates/[id]/route.ts (GET date session by ID with participant metadata, transcript messages, and evaluations)
+  - app/dates/page.tsx (Dating Arena index with interactive participant pair launcher and completed dates grid)
+  - app/dates/[id]/page.tsx (Dating Room transcript view with styled chat bubbles for Agent A & Agent B, stage timeline, and mutual evaluation cards)
+Architectural Decisions:
+  - Verified distinct agent prompts: Agent A receives only A's private context; Agent B receives only B's private context.
+  - Turns are persisted incrementally after each completed message to avoid data loss if a network error occurs mid-date.
+  - Post-date evaluations assess 5 dimensions and calculate directional scores (A evaluating B, B evaluating A).
+Commands Executed:
+  - Created 2nd consenting participant David Chen -> POST /api/people 201 Created (Pass)
+  - Executed profile analysis on David Chen -> POST /api/analyze 200 OK (Pass)
+  - Launched agent date between Maya Lin and David Chen -> POST /api/dates 201 Created (Pass, 6 alternating turns generated and persisted)
+  - Invoke-RestMethod GET http://localhost:3000/api/dates/:id -> 200 OK with full transcript and evaluations (Pass)
+  - npm run build -> 10/10 routes compiled with zero errors (Pass)
+Pass/Fail:
+  - Phase 4 acceptance criteria: PASS.
+Errors & Blockers:
+  - None.
+Next Phase Required Environment Variable Names:
+  - Phase 5 (Compatibility & Rankings): None required (pure deterministic scoring in TypeScript).
+
+[2026-10-17 20:53:00] PHASE 5 — COMPATIBILITY ENGINE & MUTUAL RANKINGS
+Milestone: Phase 5 Completed
+Files Created/Changed:
+  - lib/compatibility.ts (deterministic 5-factor mutual compatibility calculator pairwise-match-v1, symmetric aggregation, missing evidence normalization, directional asymmetry tracking, deterministic candidate ranking sort)
+  - app/api/rankings/[personId]/route.ts (GET and POST endpoints for retrieving and recomputing candidate rankings per participant)
+  - app/api/rankings/route.ts (GET overview endpoint listing active participants and their top match summary)
+  - components/ranking-card.tsx (candidate ranking card with large score badge, evidence coverage, confidence badge, collapsible 5-factor breakdown with directional scores and evidence citations, and action links)
+  - app/rankings/[personId]/page.tsx (participant candidate ranking dossier with stats banner, recompute trigger, mode filters, and transparency disclosures)
+  - app/rankings/page.tsx (rankings directory overview page)
+  - components/app-header.tsx (added Rankings to top navigation)
+  - lib/llm.ts (updated Date Evaluator fallback structure to include complete DirectionalEvaluation and MutualSummary schemas)
+  - lib/agent-runtime.ts (hardened post-date evaluation validation)
+Architectural Decisions:
+  - Strict implementation of pairwise-match-v1 weights: Relationship Goals (30%), Lifestyle & Values (25%), Shared Interests (20%), Communication Preferences (15%), Date Conversation Quality (10%).
+  - Symmetric pair score guarantee: (scoreAtoB + scoreBtoA) / 2 ensures identical mutual score when viewed from either participant's perspective, while preserving individual directional breakdowns.
+  - Normalization: Unknown/unscored dimensions are omitted from denominator, avoiding false penalization as zero.
+  - Directional disagreement >= 25 is surfaced as a highlighted friction note rather than silently averaged away.
+Commands Executed:
+  - npm run build -> 12/12 routes compiled with zero errors (Pass)
+  - POST /api/dates for Maya Lin & David Chen -> completed with complete evaluationA, evaluationB, and mutualSummary (Pass)
+  - GET /api/rankings/14d1b5b2-a589-4b29-b1da-c64c891d3662?recompute=true -> 200 OK (score: 79/100, mode: completed_date, coverage: 100%, confidence: high) (Pass)
+  - GET /api/rankings/dcce06dd-b054-463b-9473-87da40be846d?recompute=true -> 200 OK (score: 79/100, mode: completed_date, coverage: 100%, confidence: high) (Pass)
+  - Verified disk persistence in data/pairwise-store.json (Pass)
+  - GET /rankings -> 200 OK (Pass)
+  - GET /rankings/:personId -> 200 OK (Pass)
+Pass/Fail:
+  - Phase 5 acceptance criteria: PASS.
+Errors & Blockers:
+  - None.
+Next Phase Required Environment Variable Names:
+  - Phase 6 (End-to-End Integration & QA): None required.

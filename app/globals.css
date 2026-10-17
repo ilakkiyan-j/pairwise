@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #FAF8F5;
+  --surface: #FFFFFF;
+  --surface-muted: #F2EEE9;
+  --foreground: #202124;
+  --muted: #6F6A67;
+  --border: #E7E0D9;
+  --primary: #B83267;
+  --primary-hover: #982653;
+  --primary-soft: #FCE8F0;
+  --secondary: #293C35;
+  --secondary-soft: #E7F0EA;
+  --warning: #9A5B16;
+  --warning-soft: #FFF0D8;
+  --danger: #B42318;
+  --danger-soft: #FEECEB;
+  --focus: #5879D7;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Accessible focus outline */
+*:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface-muted);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
