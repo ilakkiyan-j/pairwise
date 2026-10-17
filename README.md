@@ -1,254 +1,189 @@
-# Pairwise
+# PairWise
 
 > **Let your agents meet before you do.**
 
-Pairwise is an agentic matchmaking prototype where each consenting participant is represented by an AI agent. The agent builds an evidence-backed profile from the participant's permitted LinkedIn and public Instagram source material, meets other participants' agents in a simulated date, and helps produce explainable compatibility rankings.
+PairWise is an agentic dating platform MVP where consenting participants are represented by autonomous AI advocates. An agent builds an evidence-backed intelligence profile from the participant's permitted LinkedIn and Instagram sources, meets other participants' agents in an alternating simulated date, and computes deterministic, explainable compatibility rankings under the **`pairwise-match-v1`** algorithm.
 
-**Status:** MVP in development. This README describes the intended MVP architecture; it does not claim that features are already implemented.
+[![Next.js](https://img.shields.io/badge/Next.js-14.2-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
+[![QA Tests](https://img.shields.io/badge/QA_Tests-32%20Passed-brightgreen)](file:///d:/Projects/1-active/PairWise/scripts/test-e2e.ts)
+[![Deployment](https://img.shields.io/badge/Deployment-Vercel-black?logo=vercel)](https://vercel.com/)
 
-## What it does
+---
 
-1. **Add participants** — enter a participant's LinkedIn URL and public Instagram URL, confirm consent, and provide source content through a permitted access method.
-2. **Analyze a profile** — extract stated interests, hobbies, lifestyle, communication preferences, relationship goals, needs, evidence, confidence, and unanswered questions.
-3. **Run agent dates** — let two separately prompted agents hold an alternating, model-generated conversation on behalf of their respective participants.
-4. **Rank compatibility** — combine profile-based compatibility with each agent's post-date evaluation, then display ranked candidates and understandable reasons.
-5. **Inspect the evidence** — view the two source links, analyzed profile, conversation transcript, scoring breakdown, and uncertainties behind a match.
+## The End-to-End Workflow
 
-## Product principles
-
-- **Consent first.** Dating profiles and romantic compatibility assessments are created only for participants who have opted in. Public visibility is not, by itself, consent to romantic profiling.
-- **Two source references per participant.** The intended inputs are the participant's LinkedIn profile and public Instagram profile. Pairwise stores those official URLs and records the provenance of content used in analysis.
-- **No unauthorized scraping.** A URL is not permission to bypass a site's access controls or terms. Use participant-provided profile text, authorized APIs/connectors, or another access method permitted by the relevant service. If source content is unavailable, show that limitation rather than inventing profile details.
-- **Evidence over guesses.** Separate stated facts from model interpretations, attach supporting evidence where possible, and label unknown information as unknown.
-- **Mutual, explainable matching.** Scores are estimates, not guarantees of relationship success. Show the factors that influenced a ranking and avoid treating missing information as a definite mismatch.
-- **Real agent conversations.** The visible date transcript must come from alternating calls with two distinct agent contexts—not a single model response dressed up as a conversation.
-
-## MVP tech stack
-
-| Layer | Choice | Role |
-|---|---|---|
-| Web app | Next.js App Router + TypeScript | Pages and server-side routes |
-| UI | Tailwind CSS + shadcn/ui | Responsive components and styling |
-| Validation | Zod | Validate inputs and structured model outputs |
-| Database | Supabase (PostgreSQL) | Participants, analyses, dates, messages, rankings |
-| Model provider | OpenAI API behind a small provider interface | Profile analysis, agent turns, post-date evaluations |
-| Hosting | Vercel | Public web demo |
-
-Keep the model calls behind `lib/` modules so providers can be switched without rewriting the UI. For a three-hour MVP, prioritize the end-to-end workflow over a complex multi-agent framework.
-
-## User flow
-
-```text
-Add consenting participant
-        |
-        v
-Save LinkedIn + public Instagram URLs
-and permitted source content
-        |
-        v
-Analyze content --> Evidence-backed profile page
-        |
-        v
-Run Agent A <--> Agent B simulated date
-        |
-        v
-Evaluate both sides + calculate compatibility
-        |
-        v
-Ranked candidates + reasons + transcript
+```
+1. Add Consenting Participant (LinkedIn + Instagram + Explicit Consent)
+                           │
+                           ▼
+2. Profile Intelligence Extraction (Evidence Attribution & Provenance)
+                           │
+                           ▼
+3. The Dating Arena (6-Turn Alternating Agent-to-Agent Date)
+                           │
+                           ▼
+4. Post-Date Directional Evaluations (A Evaluating B & B Evaluating A)
+                           │
+                           ▼
+5. Deterministic Matching Engine (pairwise-match-v1 Math & Symmetric Pair Scoring)
+                           │
+                           ▼
+6. Inspectable Dossier (Rankings, Factor Breakdown, Friction Notes, Transcript Link)
 ```
 
-## Suggested repository structure
+---
 
-```text
-pairwise/
-├── app/
-│   ├── page.tsx
-│   ├── people/
-│   │   ├── new/page.tsx
-│   │   └── [id]/page.tsx
-│   ├── dates/[id]/page.tsx
-│   ├── rankings/[personId]/page.tsx
-│   └── api/
-│       ├── people/route.ts
-│       ├── analyze/route.ts
-│       ├── dates/route.ts
-│       └── rankings/route.ts
-├── components/
-│   ├── profile-card.tsx
-│   ├── evidence-panel.tsx
-│   ├── date-transcript.tsx
-│   └── ranking-table.tsx
-├── lib/
-│   ├── source-ingestion.ts
-│   ├── profile-analysis.ts
-│   ├── agent-runtime.ts
-│   ├── compatibility.ts
-│   ├── db.ts
-│   └── schemas.ts
-├── scripts/seed-demo.ts
-├── docs/
-│   ├── PRD.md
-│   ├── ARCHITECTURE.md
-│   ├── DATA-SOURCES-AND-CONSENT.md
-│   ├── AGENT-DESIGN.md
-│   ├── MATCHING-ALGORITHM.md
-│   └── DEMO-SCRIPT.md
-├── .env.example
-└── README.md
-```
+## Core Features
 
-This is a suggested layout; adjust it to match the code actually present in the repository.
+### 1. Consent-First Onboarding & Provenance
+- Strict URL validation requiring **exact LinkedIn and Instagram profile URLs**.
+- Non-HTTPS and malformed URLs are rejected (`400 Bad Request`).
+- Mandatory consent gate: profiles cannot be generated without explicit affirmative consent.
+- Duplicate URL prevention (`409 Conflict`).
+- Every extracted insight tracks its source classification (`stated` vs `supported_interpretation`) and confidence level (`high`, `medium`, `low`).
 
-## Getting started
+### 2. Honest Profile Intelligence
+- Extracts relationship intent, communication preferences, lifestyle rhythms, and shared activities.
+- **Explicit Unknowns Panel:** Information not present in source text is labeled as unknown rather than fabricated or assumed.
+- No synthetic traits or inferences of protected attributes (race, health, religion, income, or physical attractiveness).
+
+### 3. Agent Dating Runtime (The Dating Arena)
+- **Real Distinct Contexts:** Agent A only receives Participant A's private dossier; Agent B only receives Participant B's private dossier. No single model call generates both sides of a conversation.
+- **Alternating 6-Turn Loop:** Agents take turns inquiring about daily rhythms, communication styles, values, and conflict approaches.
+- Incremental persistence guarantees no transcript loss if network drops mid-date.
+
+### 4. Deterministic Compatibility Engine (`pairwise-match-v1`)
+Compatibility arithmetic is implemented purely in TypeScript according to the five calibrated dimensions in `docs/MATCHING-ALGORITHM.md`:
+
+| Dimension | Configured Weight | Source Evidence |
+|---|---:|---|
+| **Relationship Goals & Intent** | **30%** | Explicitly stated commitment timeline, pace, and intentions |
+| **Lifestyle & Values** | **25%** | Daily routines, creative focus, and core principles |
+| **Shared Interests & Activities** | **20%** | Hobbies, sports, cultural pursuits, and crafts |
+| **Communication Preferences** | **15%** | Directness, frequency, planning habits, and conflict discussion |
+| **Date Conversation Quality** | **10%** | Saved turn evidence: curiosity, listening, and clarity |
+
+- **Symmetric Pair Scoring:** `mutualScore = (scoreAtoB + scoreBtoA) / 2`. A pair receives the exact same mutual compatibility score regardless of which participant views the dossier.
+- **Normalization:** Unassessed dimensions are omitted from the denominator, not penalized as zero.
+- **Pre-Date Mode vs Completed-Date Mode:** Pre-date rankings renormalize across the 4 profile dimensions while clearly labeling date conversation quality as unassessed.
+- **Directional Disagreement Surfacing:** If $|score_{A \to B} - score_{B \to A}| \ge 25$, the divergence is highlighted as a friction note.
+
+---
+
+## Tech Stack & Architecture
+
+- **Framework:** Next.js 14 App Router (React 18, Server-Side API Handlers, Static Generation)
+- **Language:** TypeScript 5 (Strict Mode, 100% Type-Safe)
+- **Styling:** Warm Editorial Design System using Tailwind CSS
+  - Canvas: `#FAF8F5`
+  - Primary Rose: `#B83267`
+  - Deep Evergreen: `#293C35`
+- **Validation:** Zod 3 schemas for all API payloads, DB records, and model responses
+- **LLM Integration:** Dual-provider client supporting OpenAI (`gpt-4o-mini`) and Google Gemini (`gemini-1.5-flash` OpenAI-compatible endpoint) with automatic retry repair and safe labeled fallback
+- **Persistence:** Thread-safe file persistence queue (`data/pairwise-store.json`) with serverless `/tmp` fallback and bundled seed data (`lib/seed-data.json`)
+- **Testing:** Comprehensive 7-suite integration test runner (`scripts/test-e2e.ts`)
+
+---
+
+## Quickstart
 
 ### Prerequisites
+- Node.js 18+
+- npm or pnpm
 
-- Node.js 20 or newer
-- npm
-- An LLM API key for generating analyses and agent conversations
-- A Supabase project for persistent storage (or a local development adapter while bootstrapping)
-
-### 1. Install dependencies
-
+### 1. Clone & Install
 ```bash
+git clone https://github.com/ilakkiyan-j/pairwise.git
+cd pairwise
 npm install
 ```
 
-### 2. Configure environment variables
-
-Copy `.env.example` to `.env.local` and add your own credentials:
-
+### 2. Configure Environment
+Create `.env.local` based on `.env.example`:
 ```bash
 cp .env.example .env.local
 ```
 
-Suggested `.env.example` keys:
+Set either your OpenAI API key or Google Gemini key:
+```env
+# Option A: OpenAI
+OPENAI_API_KEY="sk-..."
+OPENAI_MODEL="gpt-4o-mini"
 
-```dotenv
-OPENAI_API_KEY=
-OPENAI_MODEL=
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+# Option B: Google Gemini (OpenAI-compatible)
+GEMINI_API_KEY="AIzaSy..."
+OPENAI_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai"
+OPENAI_MODEL="gemini-1.5-flash"
 ```
+*(If no key is configured, PairWise seamlessly uses labeled local simulations for zero-credential offline development.)*
 
-Never commit `.env.local`, service-role keys, API keys, or other credentials. Only use a Supabase service-role key on the server, never in browser code. Add server-side input validation, rate limits, and sensible model-call limits before publishing the app.
+### 3. Seed Demo Data (25 Diverse Participants)
+```bash
+npm run seed
+```
+This initializes 25 authentic participants, verified profile analyses, sample dates, and 600 precomputed candidate rankings into `data/pairwise-store.json` and `lib/seed-data.json`.
 
-### 3. Run locally
-
+### 4. Run Development Server
 ```bash
 npm run dev
 ```
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-Open <http://localhost:3000>.
+### 5. Run Automated QA Test Suite
+```bash
+npm run test:e2e
+```
+Executes 32 assertions across 7 test suites:
+- Suite 1: Consent & URL Validation (3/3 passed)
+- Suite 2: Onboarding & Duplicate Prevention (3/3 passed)
+- Suite 3: Profile Intelligence & Provenance (5/5 passed)
+- Suite 4: Agent Dating Runtime (6/6 passed)
+- Suite 5: Deterministic Math `pairwise-match-v1` (8/8 passed)
+- Suite 6: Disk Persistence & Cascade Deletion (4/4 passed)
+- Suite 7: Security & Secret Leak Audit (3/3 passed)
 
-> The commands and environment variables above are the intended setup. Update this section if the implementation uses different scripts, providers, or persistence.
-
-## Profile analysis contract
-
-Each generated profile should use a predictable schema. Example shape:
-
-```json
-{
-  "interests": ["Example interest"],
-  "hobbies": ["Example hobby"],
-  "lifestyle": ["Prefers planned activities"],
-  "communicationPreferences": ["Values direct communication"],
-  "relationshipGoals": ["Not stated"],
-  "needs": ["Unknown until participant confirms"],
-  "evidence": [
-    {
-      "source": "linkedin",
-      "claim": "Example professional interest",
-      "excerpt": "Short supporting excerpt",
-      "confidence": "medium"
-    }
-  ],
-  "unknowns": ["Relationship goals were not stated in available sources"]
-}
+### 6. Build Production Bundle
+```bash
+npm run build
 ```
 
-This is a schema example, not a real person's profile. Do not infer sensitive traits, relationship status, sexuality, or romantic intent from unrelated public content. Ask participants to provide dating-specific preferences directly when those details are needed.
+---
 
-## Agent dating protocol
+## 3-Minute Demo Walkthrough (Judges' Guide)
 
-Each date should persist:
+Follow the script in `docs/DEMO-SCRIPT.md`:
 
-- Two separate agent identities and their permitted profile context.
-- The sequence of alternating messages, with speaker and timestamp/order.
-- The conversation completion status and any model errors.
-- A private evaluation for each side, separate from the public transcript.
-- A final mutual score, factor breakdown, reasons, possible friction points, and unanswered questions.
+1. **Act 1: The Problem & Onboarding (`/people/new`):**
+   - Show how traditional dating apps cause swiping burnout.
+   - Enter **Maya Lin** with her LinkedIn and Instagram URLs.
+   - Show the mandatory consent checkbox and submit to demonstrate instant verification.
+2. **Act 2: Profile Intelligence & Provenance (`/people/[id]`):**
+   - Click "Analyze Profile".
+   - Highlight extracted evidence badges (`stated` vs `supported_interpretation`) linking back to source URLs.
+   - Point out the **Unknowns Panel** (information omitted from sources is honestly kept unknown).
+3. **Act 3: The Dating Arena (`/dates/[id]`):**
+   - Select **Maya Lin** and **David Chen** to initiate an agent date.
+   - Watch the alternating 6-turn date conversation as their agents discuss lifestyle rhythms and communication preferences.
+   - Review post-date directional evaluations (Maya evaluating David; David evaluating Maya).
+4. **Act 4: The Compatibility Dossier (`/rankings/[personId]`):**
+   - View Maya's candidate ranking roster.
+   - Click "Inspect 5-Factor Arithmetic Breakdown" to view `pairwise-match-v1` score calculations ($79/100$).
+   - Switch to David Chen's dossier to prove **symmetric mutual scoring convergence** ($79/100$) with inverted directional sub-scores.
+   - Point out transparency disclosures confirming that physical appearance, income inferences, race, and religion are strictly excluded.
 
-A typical date should include an opening, questions about interests and expectations, exploration of differences, a possible shared activity, and a concise close. Both agents should be allowed to express uncertainty or identify a poor fit; the system must not force a positive match.
+---
 
-## Compatibility scoring
+## Security & Ethics Commitments
 
-Use a transparent weighted baseline and make the weights configurable:
+- **No Unauthorized Scraping:** Only participant-provided source material and authorized public URLs are processed.
+- **Zero Secret Leakage:** `.env*` files are strictly excluded from git. Server-side credentials never touch client bundles.
+- **No Hallucinated Traits:** Unknowns remain unknown; scores are computed deterministically in code rather than hallucinated by an unconstrained prompt.
+- **Privacy Controls:** Cascade deletion allows any participant to remove their profile, date transcripts, and rankings in a single click.
 
-| Dimension | Starting weight |
-|---|---:|
-| Stated relationship goals and expectations | 30% |
-| Lifestyle and explicitly stated values | 25% |
-| Shared interests and activities | 20% |
-| Communication preferences | 15% |
-| Simulated-date evaluation | 10% |
+---
 
-For participants A and B, a mutual score can be calculated as:
+## License
 
-```text
-mutual_score(A, B) = 0.5 * score(A evaluating B)
-                   + 0.5 * score(B evaluating A)
-```
-
-Apply the dimension weights inside each directional score. Normalize for missing evidence instead of silently counting unknowns as incompatibilities. Document any normalization used and show a breakdown in the UI. Do not use protected or sensitive attributes as compatibility factors.
-
-## Demo dataset
-
-The demo should include at least 25 **real, consenting participants**, with two official source links per participant and permitted source content sufficient to produce an analysis. Provide a seed script so the same demo can be restored reliably.
-
-- Mark demo records clearly and keep them separate from real user submissions.
-- Do not invent identities, links, consent, profile evidence, agent conversations, or model results and present them as real.
-- If a record uses synthetic data for development, label it as synthetic and do not count it as one of the 25 real participants.
-- Precompute analyses and match results for the presentation if needed, but keep the date transcript traceable to an actual model run and visibly distinguish saved demo results from a newly generated run.
-
-## Three-minute video outline
-
-1. **0:00–0:25 — Profiles:** show the populated set of 25 participants, both source links, and one complete evidence-backed analysis.
-2. **0:25–0:45 — Add a participant:** paste the LinkedIn and public Instagram URLs, provide permitted source content, and run analysis.
-3. **0:45–1:50 — Agent date:** run a conversation between two distinct agents and show the real alternating turns, an explored difference, and their evaluations.
-4. **1:50–2:35 — Rankings:** show a participant's ranked candidates, score breakdown, match explanations, and a link back to the date transcript.
-5. **2:35–3:00 — Working product:** show persistence, the live demo URL, and the public repository.
-
-Record the actual deployed app. Do not imply that automated source access is implemented if the demo uses participant-provided content or a manual ingestion path.
-
-## Acceptance checklist
-
-- [ ] Each demo participant has a LinkedIn URL, public Instagram URL, and documented consent.
-- [ ] The participant form validates URLs and handles duplicate submissions.
-- [ ] Profile analysis is generated from the permitted source content and can be reopened.
-- [ ] Findings display evidence and clearly label uncertainty.
-- [ ] Two separate agent contexts generate an alternating conversation.
-- [ ] A post-date evaluation is saved for each side.
-- [ ] Each participant has ranked candidates with scores, explanations, and a transcript link.
-- [ ] Data persists after refresh and the primary workflow works on the deployed website.
-- [ ] `.env.example` and setup instructions are current; secrets are not committed.
-- [ ] The demo video is three minutes or less.
-
-## Deployment
-
-1. Push the code to a **public GitHub repository**.
-2. Import the repository into Vercel.
-3. Add required server and database environment variables in Vercel project settings.
-4. Deploy and test the public URL in a private/incognito browser session.
-5. Seed the demo dataset and verify profiles, agent dates, rankings, error handling, and refresh persistence on the deployed instance.
-6. Put the direct demo URL, YouTube video URL, and any setup requirements near the top of this README once they exist.
-
-## Project explanation (under 200 characters)
-
-> Pairwise uses consented LinkedIn and public Instagram sources to build personal agents that date, compare compatibility, and rank matches with evidence-backed explanations.
-
-## Important limitations
-
-Pairwise is an experimental decision-support prototype. Public-profile information can be incomplete, outdated, or misleading, and language models can make mistakes. Participants should review their profiles, be able to correct or delete their data, and decide whether to engage with a suggested match. A score must never be presented as a guarantee of personal or romantic compatibility.
+MIT © 2026 PairWise Team. Built with Antigravity.

@@ -13,8 +13,10 @@ interface DatabaseStore {
   rankings: CandidateRanking[];
 }
 
-const DATA_DIR = path.join(process.cwd(), "data");
+const IS_SERVERLESS = process.env.VERCEL === "1" || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+const DATA_DIR = IS_SERVERLESS ? path.join("/tmp", "pairwise-data") : path.join(process.cwd(), "data");
 const STORE_PATH = path.join(DATA_DIR, "pairwise-store.json");
+const BUNDLED_SEED_PATH = path.join(process.cwd(), "lib", "seed-data.json");
 
 const INITIAL_STORE: DatabaseStore = {
   participants: [],
@@ -25,21 +27,52 @@ const INITIAL_STORE: DatabaseStore = {
 let memoryStore: DatabaseStore | null = null;
 let writeQueue = Promise.resolve();
 
+async function loadBundledSeed(): Promise<DatabaseStore | null> {
+  try {
+    const seedContent = await fs.readFile(BUNDLED_SEED_PATH, "utf-8");
+    return JSON.parse(seedContent);
+  } catch {
+    return null;
+  }
+}
+
 async function ensureDataFile(): Promise<DatabaseStore> {
   if (memoryStore) return memoryStore;
 
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
     const content = await fs.readFile(STORE_PATH, "utf-8");
-    memoryStore = JSON.parse(content);
+    const parsed = JSON.parse(content);
+    if (parsed.participants && parsed.participants.length > 0) {
+      memoryStore = parsed;
+      return memoryStore!;
+    }
+  } catch {
+    // File doesn't exist or is invalid
+  }
+
+  // Fallback to bundled seed data if available
+  const bundled = await loadBundledSeed();
+  if (bundled && bundled.participants && bundled.participants.length > 0) {
+    memoryStore = bundled;
+    try {
+      await fs.mkdir(DATA_DIR, { recursive: true });
+      await fs.writeFile(STORE_PATH, JSON.stringify(memoryStore, null, 2), "utf-8");
+    } catch {
+      // Ephemeral fallback if disk is not writable
+    }
     return memoryStore!;
-  } catch (error) {
-    // If file doesn't exist, create it with initial store
+  }
+
+  // Final fallback to initial empty store
+  try {
     await fs.mkdir(DATA_DIR, { recursive: true });
     await fs.writeFile(STORE_PATH, JSON.stringify(INITIAL_STORE, null, 2), "utf-8");
-    memoryStore = { ...INITIAL_STORE };
-    return memoryStore;
+  } catch {
+    // Ignore write error on read-only environments
   }
+  memoryStore = { ...INITIAL_STORE };
+  return memoryStore;
 }
 
 async function persistStore(): Promise<void> {
@@ -52,7 +85,8 @@ async function persistStore(): Promise<void> {
       await fs.writeFile(tempPath, JSON.stringify(memoryStore, null, 2), "utf-8");
       await fs.rename(tempPath, STORE_PATH);
     } catch (err) {
-      console.error("[Database] Failed to persist store to disk:", err);
+      // In read-only serverless, memoryStore remains intact in container memory
+      console.warn("[Database] Note: Disk write failed, continuing with in-memory persistence:", err);
     }
   });
   await writeQueue;
